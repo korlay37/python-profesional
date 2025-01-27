@@ -1,0 +1,6 @@
+2025-01-27 15:35:15 - INFO - Esto es mensaje de informacion
+2025-01-27 15:35:15 - WARNING - Esto es mensaje de warning
+2025-01-27 15:35:15 - ERROR - Esto es mensaje de error
+2025-01-27 15:35:15 - CRITICAL - Esto es mensaje de critical
+2025-01-27 15:39:38 - INFO - Division realizada con exito resultado: 2.2727272727272725
+2025-01-27 15:39:38 - ERROR - Error: Division entre cero
