@@ -1,16 +1,15 @@
-# Si quieres intentarlo sin ver el video:
-# 1 Crea una funcion mostrar_movimientos que reciba la lista de movimientos, 
-#   creara una lista a base de los movimientos con map, para "traducir" las coordenadas 
-#   a los nombres de fila y columnas que ve el usuario
-# 2 Crea una función/método que reciba el tablero y un 
-#   movimiento válido (posición inicial y dirección).
-# 3 Verifica que solo se aplique si el movimiento es válido.
-# 4 Usa la información de DIRECCIONES para calcular la nueva posición y 
-#   la posición de la ficha eliminada.
-# 5 Retorna una nueva versión del tablero, sin modificar el original.
+# Crear modo aleatorio y log
 
+# 1 agrega pregunta de juego random antes de while del juego 
+# 2 pasa juego random a obtener_seleccion y modifica esta para elegir aleatoriamente
+# 3 agrega decorador de logs para guardar en un archivo de texto el resultado
+#   y se aplica a finalizar_juego devolviendo info de juego
+
+import os
 from itertools import product
 from pprint import pp
+from typing import Callable
+from random import randint
 
 FILAS: list  = ["A", "B", "C", "D", "E", "F", "G"]
 COLUMNAS: list = ["1", "2", "3", "4", "5", "6", "7"]
@@ -21,12 +20,22 @@ DIRECCIONES: dict = {
     "arriba": (-2, 0, -1, 0)
 }
 
+def log_juego(func: Callable) -> Callable:
+    """Decorador para registrar logs del juego"""
+    def wrapper(self, *args, **kwargs):
+        resultado:str = func(self, *args, **kwargs)
+        with open("solitario_log.txt", "a") as log:
+            log.write(f"{resultado}\n")
+        return resultado
+    return wrapper
+
 class Solitario:
     """Clase que representa el tablero y las acciones del juego"""
     
     def __init__(self) -> None:
         """Inicializar el tablero con la configuracion inicial"""
         self.tablero: list = self._crear_tablero()
+        self.contador: Callable = self._crear_contador()
     
     def _crear_tablero(self) ->  list:
         """Define la estructura inicial del tablero"""
@@ -107,12 +116,76 @@ class Solitario:
         nuevo_tablero[nuevo_row][nueva_col] = "1"
 
         return nuevo_tablero
+    
+    def obtener_seleccion(self, movimientos: list, random: bool) -> tuple:
+        """Obtiene la seleccion del usuario en formato de fila y columna"""
+        cantidad: int = len(movimientos)
+        while True:
+            seleccion: str = str(randint(1, cantidad)) if random else input(f"Seleccione un movimiento (1 - {cantidad}): ").strip()
+            if seleccion.isdigit() and 1<= int(seleccion) <= cantidad:
+                return movimientos[int(seleccion) - 1]
+            print("Seleccion invalida, intente de nuevo")
+    
+    def contar_peg(self) -> int:
+        """Cuenta la cantidad de fichas restantes en el tablero"""
+        return sum(fila.count("1") for fila in self.tablero)
+    
+    def verificar_victoria(self) -> bool:
+        """Verifica si ha ganado el juego"""
+        fichas_restantes: int = self.contar_peg()
+        if fichas_restantes == 1 and self.tablero[3][3] == "1":
+            return True
+        return False
+    
+    def _crear_contador(self) -> Callable:
+        """Closure - contador"""
+        movimientos: int = 0
+        def incrementar() -> int:
+            nonlocal movimientos
+            movimientos += 1
+            return movimientos
+        return incrementar
+    
+    @log_juego
+    def finalizar_juego(self, victoria: bool) -> str:
+        """Finaliza el juego y retorna el resultado"""
+        num_movimientos: int = self.contador() - 1
+        restantes: int = self.contar_peg()
+        mensaje: str = f"{'Victoria'if victoria else 'Derrota'}  | Movimientos: {num_movimientos} | Fichas Restantes: {restantes}"
+        print(mensaje)
+        return mensaje
 
-solitario: Solitario = Solitario()
-solitario.mostrar_tablero()
-movimientos:list = solitario.get_movimientos_validos()
-solitario.mostrar_movimientos(movimientos)
-nuevo_tablero: list|None = solitario.aplicar_movimiento((3,1,"derecha"))
-if nuevo_tablero:
-    solitario.tablero = nuevo_tablero
+
+def main():
+    os.system("cls" if os.name == "nt" else "clear")
+    solitario: Solitario = Solitario()
     solitario.mostrar_tablero()
+    jugando: bool = True
+    while True:
+        respuesta: str =  input("Quieres jugar en modo random? (s/n): ").strip().lower()
+        if respuesta in ("s", "n"):
+            juego_random: bool = respuesta == "s"
+            break
+        else:
+            print("Entrada invalida, ingresa 's' para si o 'n' para no")
+
+    while jugando:
+        movimientos: list = solitario.get_movimientos_validos()
+        if not movimientos:
+            victoria: bool = solitario.verificar_victoria()
+            print("Fin del juego no hay mas movimientos!")
+            jugando = False
+        else:
+            print("Movimientos validos:")
+            solitario.mostrar_movimientos(movimientos)
+            movimiento: tuple = solitario.obtener_seleccion(movimientos, juego_random)
+            solitario.contador()
+            nuevo_tablero: list|None = solitario.aplicar_movimiento(movimiento)
+            if nuevo_tablero:
+                os.system("cls" if os.name == "nt" else "clear")
+                solitario.tablero = nuevo_tablero
+                solitario.mostrar_tablero()
+    solitario.finalizar_juego(victoria)
+
+if __name__ == "__main__":
+    main()
