@@ -6,6 +6,7 @@ def manejador_productos():
     """Crear una nueva instancia del manejador"""
     return ManejadorProductos()
 
+@pytest.mark.lento
 def test_agregar_producto(manejador_productos):
     assert manejador_productos.agregar_producto("galletas", 22.2) == True
     assert manejador_productos.obtener_producto("galletas") == 22.2
